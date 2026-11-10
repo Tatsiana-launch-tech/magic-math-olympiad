@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школа Магии: Олимпиада по математике</title>
+    <style>
+        :root {
+            --color-text: #FFFFFF;
+            --color-accent: #FFD700;
+            --color-error: #FF6B6B;
+            --color-bg-easy: linear-gradient(135deg, #2E7D32, #81C784);
+            --color-bg-medium: linear-gradient(135deg, #4A148C, #B388FF);
+            --color-bg-hard: linear-gradient(135deg, #0D47A1, #E53935);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--color-text);
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            width: 100vw;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            padding: 40px 20px;
+            box-sizing: border-box;
+            transition: all 0.5s ease;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        #screen-start, #screen-choice, #screen-final {
+            background: var(--color-bg-medium);
+        }
+
+        #screen-task {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .cat-img {
+            width: 220px;
+            height: auto;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.5));
+            animation: float 3s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: var(--color-accent);
+            color: #333;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(255,215,0,0.4);
+        }
+
+        .choice-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .task-icon {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 5px var(--color-accent));
+        }
+
+        .task-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(0,0,0,0.6);
+            padding: 25px;
+            border-radius: 30px;
+            border: 3px solid var(--color-accent);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: visible;
+            margin-bottom: 40px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+        }
+
+        .option-btn:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        .result-msg {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-top: 20px;
+            min-height: 1.6em;
+        }
+
+        /* Matching Styles */
+        .matching-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            position: relative;
+            margin-top: 20px;
+            z-index: 1;
+        }
+
+        .matching-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+            z-index: 2;
+        }
+
+        .matching-item {
+            background: rgba(255,255,255,0.15);
+            border: 2px solid white;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 0.95rem;
+            user-select: none;
+        }
+
+        .matching-item.selected {
+            background: var(--color-accent);
+            color: #333;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 15px var(--color-accent);
+        }
+
+        .matching-item.matched {
+            opacity: 0.6;
+            cursor: default;
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.3);
+        }
+
+        #matching-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Crossword Styles */
+        .crossword-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        .cw-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .cw-cell {
+            width: 35px;
+            height: 35px;
+            border: 2px solid white;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 5px;
+            padding: 0;
+        }
+
+        .cw-cell:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (max-width: 600px) {
+            .screen { padding: 20px 10px; }
+            h1 { font-size: 1.6rem; }
+            .cat-img { width: 160px; }
+            .task-container { padding: 15px; }
+            .options-grid { grid-template-columns: 1fr; }
+            .matching-container { flex-direction: column; }
+            .matching-column { align-items: center; }
+            .matching-item { width: 90%; font-size: 0.8rem; }
+            .cw-cell { width: 30px; height: 30px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="screen-start" class="screen active">
+        <img src="assets/cat_welcome.png" class="cat-img" alt="Кот-магистр">
+        <h1>Школа Магии:<br>Олимпиада по математике</h1>
+        <button class="btn" onclick="goToScreen('screen-choice')">Войти в школу</button>
+    </div>
+
+    <div id="screen-choice" class="screen">
+        <img src="assets/cat_hint.png" class="cat-img" alt="Кот-магистр">
+        <h1>Выбери уровень своей магической силы</h1>
+        <div class="choice-container">
+            <button class="btn" onclick="startQuiz('easy')">Новичок (Легкий)</button>
+            <button class="btn" onclick="startQuiz('medium')">Маг (Средний)</button>
+            <button class="btn" onclick="startQuiz('hard')">Архимаг (Сложный)</button>
+        </div>
+    </div>
+
+    <div id="screen-task" class="screen">
+        <img id="task-cat" src="assets/cat_hint.png" class="cat-img" alt="Кот-магистр">
+        <div class="task-container">
+            <div class="task-header">
+                <img id="task-icon" src="" class="task-icon" alt="Тип задания">
+                <h2 id="task-type-name" style="margin: 0; font-size: 1.5rem; opacity: 0.9;">Задание</h2>
+            </div>
+            <h2 id="task-text">Загрузка...</h2>
+            <div id="task-input-area" class="options-grid"></div>
+            <div id="feedback" class="result-msg"></div>
+        </div>
+    </div>
+
+    <div id="screen-final" class="screen">
+        <img id="final-cat" src="assets/cat_success.png" class="cat-img" alt="Кот-магистр">
+        <h1 id="final-title">Поздравляем!</h1>
+        <p id="final-text" style="font-size: 1.3rem; margin-bottom: 30px;"></p>
+        <img id="final-reward" src="assets/reward_star.png" style="width: 150px; margin-bottom: 30px;" alt="Награда">
+        <button class="btn" onclick="goToScreen('screen-choice')">Попробовать снова</button>
+    </div>
+
+    <script>
+        const QUIZ_DATA = {
+            easy: {
+                logic: [
+                    { text: 'Аня, Женя и Нина получили разные оценки по зельеварению (без двоек). Известно, что у Ани не «3» и не «4», а у Нины не «3» и не «5». Какую оценку получила каждая девочка?', options: ['Аня — 5, Нина — 4, Женя — 3', 'Аня — 4, Нина — 5, Женя — 3', 'Аня — 5, Нина — 3, Женя — 4'], correct: 'Аня — 5, Нина — 4, Женя — 3' },
+                    { text: 'В трех магических сундуках лежат кристаллы: в одной только красные, в другой только синие, в третьей — и красные, и синие. На каждом сундуке есть надпись: «Красные», «Синие», «Смешанные». Все надписи ложные. Вы достали один кристалл из коробки с надписью «Смешанные», и он оказался красным. Что лежит в остальных сундуках?', options: ['В сундуке «Синие» — смешанные, в сундуке «Красные» — синие', 'В сундуке «Синие» — красные, в сундуке «Красные» — смешанные', 'В сундуке «Синие» — синие, в сундуке «Красные» — смешанные'], correct: 'В сундуке «Синие» — смешанные, в сундуке «Красные» — синие' },
+                    { text: 'Маша сказала: «Сегодня вторник». Паша сказал: «Маша врет». Если один из них говорит правду, а другой лжет, можно ли однозначно определить сегодняшний день?', options: ['Да, сегодня вторник', 'Да, сегодня среда', 'Нет, определить нельзя'], correct: 'Нет, определить нельзя' }
+                ],
+                matching: [
+                    {
+                        text: 'Соотнесите геометрическую фигуру и количество её вершин:',
+                        left: ['Треугольник', 'Пятиугольник', 'Квадрат'],
+                        right: ['4 вершины', '3 вершины', '5 вершин'],
+                        pairs: { 'Треугольник': '3 вершины', 'Пятиугольник': '5 вершин', 'Квадрат': '4 вершины' },
+                        correct: 'А-2, Б-3, В-1'
+                    },
+                    {
+                        text: 'Соотнесите геометрическую фигуру с количеством её вершин:',
+                        left: ['Квадрат', 'Треугольник', 'Шестиугольник'],
+                        right: ['3 вершины', '4 вершины', '6 вершин'],
+                        pairs: { 'Квадрат': '4 вершины', 'Треугольник': '3 вершины', 'Шестиугольник': '6 вершин' },
+                        correct: 'А-2, Б-1, В-3'
+                    },
+                    {
+                        text: 'Соотнесите единицы измерения с их значениями в см:',
+                        left: ['1 дециметр', '1 метр', '1 миллиметр'],
+                        right: ['100 см', '0.1 см', '10 см'],
+                        pairs: { '1 дециметр': '10 см', '1 метр': '100 см', '1 миллиметр': '0.1 см' },
+                        correct: 'А-3, Б-1, В-2'
+                    }
+                ],
+                choice: [
+                    { text: 'В сундуке лежат 3 красных и 4 зеленых магических шара. Какое минимальное количество шаров нужно достать вслепую, чтобы среди них точно оказался хотя бы один красный?', options: ['1', '4', '5', '7'], correct: '5' },
+                    { text: 'Какое число при умножении на 7 и прибавлении 3 дает 31?', options: ['3', '4', '5', '6'], correct: '4' },
+                    { text: 'Сколько будет 0 × 12345 × 67 × 8?', options: ['12345', '0', '67', 'Невозможно вычислить'], correct: '0' }
+                ],
+                riddles: [
+                    { text: 'Одно яйцо варится в кипящей воде ровно 4 минуты. Сколько минут будут вариться 5 яиц, если их положить в одну кастрюлю одновременно?', correct: '4 минуты' },
+                    { text: 'Какое число становится больше, если его перевернуть вверх ногами?', correct: '6' },
+                    { text: 'У какого слова первая буква — последняя, а последняя — первая?', correct: 'Алфавит' }
+                ],
+                charades: [
+                    { text: 'Я четное число. Я больше 10, но меньше 20. Сумма моих цифр равна 3. Кто я?', correct: '12' },
+                    { text: 'Я — двузначное число. Моя сумма цифр равна 9. Если поменять мои цифры местами, я стану больше себя на 9.', correct: '45' },
+                    { text: 'Я — самое маленькое трехзначное число, которое делится на 2, 3 и 5 одновременно.', correct: '120' }
+                ],
+                crosswords: [
+                    { text: 'Разгадай слова: Результат сложения; Фигура из двух лучей; Число отсутствия.', words: ['СУММА', 'УГОЛ', 'НОЛЬ'], correct: 'СУММА, УГОЛ, НОЛЬ' },
+                    { text: 'Разгадай слова: Результат сложения; Знак вычитания; Геометрический объект без размера.', words: ['СУММА', 'МИНУС', 'ТОЧКА'], correct: 'СУММА, МИНУС, ТОЧКА' },
+                    { text: 'Разгадай слова: Фигура из двух лучей; Фигура, похожая на яйцо.', words: ['УГОЛ', 'ОВАЛ'], correct: 'УГОЛ, ОВАЛ' }
+                ]
+            },
+            medium: {
+                logic: [
+                    { text: 'Три зайца спорили, у кого длиннее уши. Пушистик сказал: «У Ушастика не самые длинные уши». Ушастик: «У меня уши длиннее, чем у Пушистика». Топотун: «У Ушастика уши длиннее, чем у меня». Солгал только тот, у кого уши самые длинные. Кто самый длинноухий?', options: ['Пушистик', 'Ушастик', 'Топотун'], correct: 'Топотун' },
+                    { text: 'В классе 25 учеников. 15 любят математику, 12 — рисование, 5 не любят ни того, ни другого. Сколько любят и то, и другое?', options: ['5 учеников', '7 учеников', '10 учеников'], correct: '7 учеников' },
+                    { text: 'Андрей, Борис и Виктор имеют хобби: футбол, шахматы и плавание. Борис не играет в шахматы. Андрей не играет в футбол и не плавает. Кто чем занимается?', options: ['Андрей-футбол, Борис-шахматы, Виктор-плавание', 'Андрей-шахматы, Борис-футбол, Виктор-плавание', 'Андрей-плавание, Борис-футбол, Виктор-шахматы'], correct: 'Андрей-шахматы, Борис-футбол, Виктор-плавание' }
+                ],
+                matching: [
+                    {
+                        text: 'Три друга живут в домах разного цвета. Макс не в красном. Кира не в красном и не в синем.',
+                        left: ['Макс', 'Лев', 'Кира'],
+                        right: ['Красный', 'Синий', 'Зеленый'],
+                        pairs: { 'Макс': 'Синий', 'Лев': 'Красный', 'Кира': 'Зеленый' },
+                        correct: 'А-Синий, Б-Красный, В-Зеленый'
+                    },
+                    {
+                        text: 'Соотнесите действие с названием:',
+                        left: ['12 * 5 = 60', '100 - 45 = 55', '144 / 12 = 12'],
+                        right: ['Разность', 'Произведение', 'Частное'],
+                        pairs: { '12 * 5 = 60': 'Произведение', '100 - 45 = 55': 'Разность', '144 / 12 = 12': 'Частное' },
+                        correct: 'А-2, Б-1, В-3'
+                    },
+                    {
+                        text: 'Соотнесите площадь прямоугольника со сторонами:',
+                        left: ['3см x 4см', '2см x 10см', '5см x 5см'],
+                        right: ['20 кв.см', '12 кв.см', '25 кв.см'],
+                        pairs: { '3см x 4см': '12 кв.см', '2см x 10см': '20 кв.см', '5см x 5см': '25 кв.см' },
+                        correct: 'А-2, Б-1, В-3'
+                    }
+                ],
+                choice: [
+                    { text: 'Маша прочитала 1/3 книги, Петя — 1/4. Вместе прочитали 35 страниц. Сколько страниц в книге?', options: ['40', '50', '60', '100'], correct: '60' },
+                    { text: 'В корзине 4 белых и 6 красных шаров. Сколько нужно достать, чтобы точно был один белый?', options: ['1', '4', '7', '10'], correct: '7' },
+                    { text: 'Сумма трех последовательных чисел равна 45. Какое самое большое?', options: ['14', '15', '16', '17'], correct: '16' }
+                ],
+                riddles: [
+                    { text: 'Мюнхгаузен задумал число, умножил на 5, прибавил 6, разделил на 9, прибавил 1 и получил 10.', correct: '15' },
+                    { text: 'Я всегда иду, но никогда не двигаюсь с места. У меня есть лицо, но нет глаз. Кто я?', correct: 'Часы' },
+                    { text: 'Чем больше из этого забираешь, тем больше оно становится. Что это?', correct: 'Яма' }
+                ],
+                charades: [
+                    { text: 'Разгадай число-загадку. 1-я цифра: углы прямоугольника. 2-я: 12/4. 3-я: 10-7.', correct: '433' },
+                    { text: 'Я — двузначное число. Если меня разделить на 3, получится 12. Если умножить на 2, получится 72.', correct: '36' },
+                    { text: 'Моя первая цифра в 3 раза больше второй. Сумма моих цифр равна 8.', correct: '62' }
+                ],
+                crosswords: [
+                    { text: 'Разгадай слова: Сумма сторон; Отрезок центра-край; Линия к середине стороны; Площадь поверхности.', words: ['ПЕРИМЕТР', 'РАДИУС', 'МЕДИАНА', 'ПЛОЩАДЬ'], correct: 'ПЕРИМЕТР, РАДИУС, МЕДИАНА, ПЛОЩАДЬ' },
+                    { text: 'Разгадай слова: Число с числителем и знаменателем; Последовательность чисел.', words: ['ДРОБЬ', 'РЯД'], correct: 'ДРОБЬ, РЯД' },
+                    { text: 'Разгадай слова: Фигура с 4 равными сторонами; Фигура с 3 углами.', words: ['КВАДРАТ', 'ТРЕУГОЛЬНИК'], correct: 'КВАДРАТ, ТРЕУГОЛЬНИК' }
+                ]
+            },
+            hard: {
+                logic: [
+                    { text: 'В комнате три сундука (К, С, З). Все надписи ЛЖИВЫ. К: «Золото в синем». С: «Золото не здесь». З: «Золото в красном». Где золото?', options: ['В синем сундуке', 'В зеленом сундуке', 'В красном сундуке'], correct: 'В красном сундуке' },
+                    { text: 'Остров рыцарей и лжецов. А: «Мы все лжецы». Б: «Только один из нас рыцарь». В: молчит. Кто кто?', options: ['А-рыцарь, Б-лжец, В-лжец', 'А-лжец, Б-рыцарь, В-лжец', 'А-лжец, Б-лжец, В-рыцарь'], correct: 'А-лжец, Б-рыцарь, В-лжец' },
+                    { text: 'В шахматном турнире каждый сыграл с каждым по одной партии. Всего 66 партий. Сколько игроков?', options: ['10 игроков', '11 игроков', '12 игроков'], correct: '12 игроков' }
+                ],
+                matching: [
+                    {
+                        text: 'Соотнесите описание числа с самим числом:',
+                        left: ['Мальшее трёхзначное (3,4,5)', 'В 2 раза больше суммы однозначных', 'Минут в 3/4 часа'],
+                        right: ['120', '90', '45'],
+                        pairs: { 'Мальшее трёхзначное (3,4,5)': '120', 'В 2 раза больше суммы однозначных': '90', 'Минут в 3/4 часа': '45' },
+                        correct: 'А-1, Б-2, В-3'
+                    },
+                    {
+                        text: 'Соотнесите тип треугольника и свойство:',
+                        left: ['Равносторонний', 'Равнобедренный', 'Прямоугольный'],
+                        right: ['Две стороны равны', 'Угол 90°', 'Все стороны равны'],
+                        pairs: { 'Равносторонний': 'Все стороны равны', 'Равнобедренный': 'Две стороны равны', 'Прямоугольный': 'Угол 90°' },
+                        correct: 'А-3, Б-1, В-2'
+                    },
+                    {
+                        text: 'Соотнесите число с римским написанием:',
+                        left: ['44', '99', '150'],
+                        right: ['XLIV', 'XCIX', 'CL'],
+                        pairs: { '44': 'XLIV', '99': 'XCIX', '150': 'CL' },
+                        correct: 'А-1, Б-2, В-3'
+                    }
+                ],
+                choice: [
+                    { text: 'Трёхзначное число, цифры разные. 781: две цифры совпадают, не на своих местах. 985: одна совпадает на своём месте. 493: ни одна не совпадает. Какое число?', options: ['175', '195', '517', '715'], correct: '175' },
+                    { text: 'Сколько целых чисел между -5 и 5?', options: ['9', '10', '11', '8'], correct: '9' },
+                    { text: 'Периметр квадрата равен периметру прямоугольника 8 × 4. Площадь квадрата?', options: ['36', '49', '64', '144'], correct: '36' }
+                ],
+                riddles: [
+                    { text: 'Я — число. Если меня умножить на 2, прибавить 10 и разделить на 2, получится 20. Кто я?', correct: '15' },
+                    { text: 'Что можно увидеть с закрытыми глазами?', correct: 'Сон' },
+                    { text: 'Какое число при делении на любое другое (кроме 0) всегда дает само себя?', correct: '0' }
+                ],
+                charades: [
+                    { text: 'Трехзначное число. 1-я цифра в 3 раза больше 3-й. Сумма цифр = 12. При перестановке 1 и 2 цифр число уменьшается на 180.', correct: '642' },
+                    { text: 'Трехзначное число. Первая цифра — квадрат второй, третья — сумма первых двух.', correct: '426' },
+                    { text: 'Сумма трех цифр = 10. Делится на 5. Первая цифра в 4 раза больше второй.', correct: '820' }
+                ],
+                crosswords: [
+                    { text: 'Разгадай слова: Подсчет вариантов; Неизменная величина; Сторона в пр. треугольнике; Свойство числа.', words: ['КОМБИНАТОРИКА', 'ИНВАРИАНТ', 'ГИПОТЕНУЗА', 'ПРИЗНАК'], correct: 'КОМБИНАТОРИКА, ИНВАРИАНТ, ГИПОТЕНУЗА, ПРИЗНАК' },
+                    { text: 'Разгадай слова: Сумма длин сторон; Размер поверхности.', words: ['ПЕРИМЕТР', 'ПЛОЩАДЬ'], correct: 'ПЕРИМЕТР, ПЛОЩАДЬ' },
+                    { text: 'Разгадай слова: Число, которое делят; Число, на которое умножают.', words: ['ДЕЛИМОЕ', 'МНОЖИТЕЛЬ'], correct: 'ДЕЛИМОЕ, МНОЖИТЕЛЬ' }
+                ]
+            }
+        };
+
+        const TYPE_INFO = {
+            logic: { name: 'Логика', icon: 'assets/icon_logic.png' },
+            matching: { name: 'Соотнесение', icon: 'assets/icon_matching.png' },
+            choice: { name: 'Выбор ответа', icon: 'assets/icon_choice.png' },
+            riddles: { name: 'Загадки', icon: 'assets/icon_riddles.png' },
+            charades: { name: 'Шарады', icon: 'assets/icon_charades.png' },
+            crosswords: { name: 'Кроссворды', icon: 'assets/icon_crossword.png' }
+        };
+
+        const CAT_PHRASES = {
+            welcome: "Привет, юный математик! Я — твой проводник в Школе Магии. Готов проверить свою смекалку и открыть тайны чисел?",
+            choice: "Хмм, с чего начнем наше обучение? Выбери свой уровень магической силы!",
+            success: "Блестяще! Твои знания работают как настоящие заклинания! Продолжаем!",
+            error: "Ой, кажется, заклинание сработало не совсем так... Ничего страшного, даже великие маги ошибались. Вперед к следующему испытанию!",
+            final_win: "Ух ты! Ты прошел этот путь с достоинством! Твой разум остр, как кошачий коготь. Ты настоящий мастер!",
+            final_mid: "Отличная работа! Ты сделал огромный шаг вперед в изучении магии чисел. Еще немного практики — и ты станешь Архимагом!"
+        };
+
+        let currentLevel = '';
+        let currentSessionTasks = [];
+        let currentTaskIndex = 0;
+        let score = 0;
+
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startQuiz(level) {
+            currentLevel = level;
+            currentTaskIndex = 0;
+            score = 0;
+
+            currentSessionTasks = [];
+            const levelData = QUIZ_DATA[currentLevel];
+
+            for (const type in levelData) {
+                const typeTasks = levelData[type];
+                const randomTask = typeTasks[Math.floor(Math.random() * typeTasks.length)];
+                currentSessionTasks.push({ ...randomTask, type: type });
+            }
+
+            shuffleArray(currentSessionTasks);
+
+            const taskScreen = document.getElementById('screen-task');
+            let bgImage = "";
+            if(level === 'easy') bgImage = "assets/bg_easy.png";
+            if(level === 'medium') bgImage = "assets/bg_medium.png";
+            if(level === 'hard') bgImage = "assets/bg_hard.png";
+            taskScreen.style.backgroundImage = `url('${bgImage}')`;
+
+            goToScreen('screen-task');
+            loadTask();
+        }
+
+        function loadTask() {
+            if (currentTaskIndex >= currentSessionTasks.length) {
+                showFinal();
+                return;
+            }
+
+            const task = currentSessionTasks[currentTaskIndex];
+            const typeInfo = TYPE_INFO[task.type];
+
+            document.getElementById('task-icon').src = typeInfo.icon;
+            document.getElementById('task-type-name').innerText = typeInfo.name;
+            document.getElementById('task-text').innerText = task.text;
+
+            const inputArea = document.getElementById('task-input-area');
+            const feedback = document.getElementById('feedback');
+
+            inputArea.innerHTML = "";
+            feedback.innerText = "";
+            document.getElementById('task-cat').src = "assets/cat_hint.png";
+
+            if (task.type === 'choice' || task.type === 'logic') {
+                const logicOptions = task.type === 'logic' ? task.options : null;
+                (logicOptions || task.options).forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkAnswer(opt);
+                    inputArea.appendChild(btn);
+                });
+            } else if (task.type === 'matching') {
+                setupMatching(task, inputArea);
+            } else if (task.type === 'crosswords') {
+                setupCrossword(task, inputArea);
+            } else if (task.type === 'logic') {
+                inputArea.innerHTML = '<p>Для этого задания пока не добавлены варианты ответа.</p>';
+            } else {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'option-btn';
+                input.style.width = '80%';
+                input.placeholder = 'Введите ответ...';
+
+                const sendBtn = document.createElement('button');
+                sendBtn.className = 'btn';
+                sendBtn.innerText = 'Отправить';
+                sendBtn.onclick = () => checkAnswer(input.value);
+
+                inputArea.appendChild(input);
+                inputArea.appendChild(sendBtn);
+            }
+        }
+
+        function setupMatching(task, container) {
+            container.innerHTML = '';
+            container.classList.remove('options-grid');
+            container.classList.add('matching-container');
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('id', 'matching-svg');
+            container.appendChild(svg);
+
+            const leftCol = document.createElement('div');
+            leftCol.className = 'matching-column';
+            const rightCol = document.createElement('div');
+            rightCol.className = 'matching-column';
+
+            // Сортируем элементы для корректного отображения А, Б, В и 1, 2, 3
+            const lefts = [...task.left];
+            const rights = [...task.right];
+            shuffleArray(rights); // Перемешиваем правую часть, чтобы не было А-1, Б-2
+
+            let selectedLeft = null;
+            const matchedPairs = {};
+
+            lefts.forEach(text => {
+                const item = document.createElement('div');
+                item.className = 'matching-item';
+                item.innerText = text;
+                item.onclick = () => {
+                    if(selectedLeft) selectedLeft.classList.remove('selected');
+                    selectedLeft = item;
+                    item.classList.add('selected');
+                };
+                leftCol.appendChild(item);
+            });
+
+            rights.forEach(text => {
+                const item = document.createElement('div');
+                item.className = 'matching-item';
+                item.innerText = text;
+                item.onclick = () => {
+                    if (!selectedLeft) return;
+
+                    const leftVal = selectedLeft.innerText;
+                    const rightVal = text;
+
+                    if (task.pairs[leftVal] === rightVal) {
+                        drawMatchingLine(selectedLeft, item, svg);
+                        selectedLeft.classList.add('matched');
+                        item.classList.add('matched');
+                        selectedLeft.classList.remove('selected');
+                        selectedLeft = null;
+                        matchedPairs[leftVal] = true;
+
+                        if (Object.keys(matchedPairs).length === lefts.length) {
+                            checkAnswer(task.correct);
+                        }
+                    } else {
+                        selectedLeft.classList.remove('selected');
+                        selectedLeft = null;
+                    }
+                };
+                rightCol.appendChild(item);
+            });
+
+            container.appendChild(leftCol);
+            container.appendChild(rightCol);
+        }
+
+        function drawMatchingLine(el1, el2, svg) {
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+            const svgRect = svg.getBoundingClientRect();
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', rect1.right - svgRect.left);
+            line.setAttribute('y1', rect1.top + rect1.height/2 - svgRect.top);
+            line.setAttribute('x2', rect2.left - svgRect.left);
+            line.setAttribute('y2', rect2.top + rect2.height/2 - svgRect.top);
+            line.setAttribute('stroke', 'var(--color-accent)');
+            line.setAttribute('stroke-width', '3');
+            line.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(line);
+        }
+
+        function setupCrossword(task, container) {
+            container.innerHTML = '';
+            container.classList.remove('options-grid');
+
+            const words = task.words;
+            const grid = document.createElement('div');
+            grid.className = 'crossword-grid';
+
+            words.forEach((word, idx) => {
+                const row = document.createElement('div');
+                row.className = 'cw-row';
+
+                const label = document.createElement('div');
+                label.innerText = `${idx+1}. `;
+                label.style.alignSelf = 'center';
+                row.appendChild(label);
+
+                for(let i=0; i<word.length; i++) {
+                    const cell = document.createElement('input');
+                    cell.className = 'cw-cell';
+                    cell.maxLength = 1;
+                    cell.dataset.wordIdx = idx;
+                    cell.dataset.charIdx = i;
+                    cell.oninput = (e) => {
+                        if(e.target.value) {
+                            const next = cell.nextElementSibling;
+                            if(next && next.classList.contains('cw-cell')) next.focus();
+                        }
+                    };
+                    row.appendChild(cell);
+                }
+                grid.appendChild(row);
+            });
+
+            const checkBtn = document.createElement('button');
+            checkBtn.className = 'btn';
+            checkBtn.innerText = 'Проверить слова';
+            checkBtn.onclick = () => {
+                let fullAnswer = [];
+                const rows = grid.children;
+                for(let i=0; i<rows.length; i++) {
+                    const cells = rows[i].querySelectorAll('.cw-cell');
+                    let word = '';
+                    cells.forEach(c => word += c.value.toUpperCase());
+                    fullAnswer.push(word);
+                }
+                checkAnswer(fullAnswer.join(', '));
+            };
+
+            container.appendChild(grid);
+            container.appendChild(checkBtn);
+        }
+
+        function checkAnswer(userAnswer) {
+            const task = currentSessionTasks[currentTaskIndex];
+            const feedback = document.getElementById('feedback');
+            const catImg = document.getElementById('task-cat');
+
+            if (userAnswer.trim().toLowerCase() === task.correct.toLowerCase()) {
+                score++;
+                feedback.innerText = CAT_PHRASES.success;
+                feedback.style.color = "var(--color-accent)";
+                catImg.src = "assets/cat_success.png";
+            } else {
+                feedback.innerText = CAT_PHRASES.error;
+                feedback.style.color = "var(--color-error)";
+                catImg.src = "assets/cat_support.png";
+            }
+
+            document.getElementById('task-input-area').style.pointerEvents = 'none';
+
+            setTimeout(() => {
+                document.getElementById('task-input-area').style.pointerEvents = 'auto';
+                currentTaskIndex++;
+                loadTask();
+            }, 2500);
+        }
+
+        function showFinal() {
+            goToScreen('screen-final');
+            const finalText = document.getElementById('final-text');
+            const finalCat = document.getElementById('final-cat');
+            const finalReward = document.getElementById('final-reward');
+
+            const percent = (score / currentSessionTasks.length) * 100;
+
+            if (percent === 100) {
+                finalText.innerText = CAT_PHRASES.final_win + `\nТвой результат: ${score}/${currentSessionTasks.length}`;
+                finalCat.src = "assets/cat_success.png";
+                finalReward.src = "assets/reward_crystal.png";
+            } else {
+                finalText.innerText = CAT_PHRASES.final_mid + `\nТвой результат: ${score}/${currentSessionTasks.length}`;
+                finalCat.src = "assets/cat_support.png";
+                finalReward.src = "assets/reward_star.png";
+            }
+        }
+    </script>
+</body>
+</html>
